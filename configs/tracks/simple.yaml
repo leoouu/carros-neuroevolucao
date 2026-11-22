@@ -1,0 +1,19 @@
+# Pista simples (Fase 1/2): curvas largas, uma "barriga" para dentro.
+# A pista é a linha central (pontos de controle, suavizados) + largura.
+# O sentido de corrida segue a ordem dos pontos; o primeiro ponto é a largada.
+name: simple
+width: 95.0
+smoothing: 4           # iterações de Chaikin (mais = curvas mais redondas)
+spacing: 18.0          # distância entre pontos das bordas (px)
+checkpoint_every: 3    # um checkpoint a cada 3 pontos (~54 px)
+control_points:
+  - [500, 120]
+  - [880, 130]
+  - [960, 380]
+  - [860, 640]
+  - [640, 610]
+  - [500, 520]
+  - [360, 610]
+  - [140, 640]
+  - [60, 380]
+  - [130, 130]

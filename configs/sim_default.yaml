@@ -1,0 +1,22 @@
+# Física e regras da simulação. Unidades: pixels (px) e segundos (s).
+dt: 0.0166667            # passo fixo (60 Hz) -> simulação determinística
+
+car:
+  length: 26.0
+  width: 13.0
+  max_speed: 330.0       # px/s
+  acceleration: 260.0    # px/s² com acelerador no máximo
+  brake: 450.0           # px/s² com freio no máximo
+  drag: 0.5              # atrito proporcional à velocidade (1/s)
+  turn_rate: 3.0         # rad/s com volante no máximo
+  turn_speed_ref: 80.0   # abaixo dessa velocidade o giro diminui (carro parado não gira)
+
+sensors:
+  count: 7
+  fov_deg: 180.0         # leque de -90° a +90° em relação à frente do carro
+  max_range: 260.0       # px; distâncias são normalizadas para [0, 1]
+
+elimination:
+  stall_speed: 8.0       # px/s; abaixo disso conta como "parado"
+  stall_time: 2.0        # s parado -> eliminado
+  checkpoint_timeout: 6.0  # s sem alcançar novo checkpoint -> eliminado
