@@ -40,32 +40,32 @@ GA = GAParams(
 
 
 # ------------------------------------------------------------------ fitness
+# ``progress`` é a fração da volta em [0, 1].
 def test_fitness_formula() -> None:
-    f = compute_fitness(np.array([3.5, 45.0]), np.array([False, True]), np.array([10.0, 8.0]), FIT)
-    np.testing.assert_allclose(f, [3.5 - 0.2, 45.0 + 50.0 - 0.16])
+    f = compute_fitness(np.array([0.35, 1.0]), np.array([False, True]), np.array([10.0, 8.0]), FIT)
+    np.testing.assert_allclose(f, [35.0 - 0.2, 100.0 + 50.0 - 0.16])
 
 
 def test_more_progress_beats_less_progress() -> None:
-    f = compute_fitness(np.array([2.0, 2.6]), np.zeros(2, bool), np.array([1.0, 1.0]), FIT)
+    f = compute_fitness(np.array([0.20, 0.26]), np.zeros(2, bool), np.array([1.0, 1.0]), FIT)
     assert f[1] > f[0]
 
 
 def test_finishing_beats_any_unfinished_run() -> None:
-    n_cps = 45
-    unfinished = compute_fitness(np.array([n_cps - 0.01]), np.zeros(1, bool), np.zeros(1), FIT)
-    finished = compute_fitness(np.array([float(n_cps)]), np.ones(1, bool), np.array([40.0]), FIT)
+    unfinished = compute_fitness(np.array([0.999]), np.zeros(1, bool), np.zeros(1), FIT)
+    finished = compute_fitness(np.array([1.0]), np.ones(1, bool), np.array([40.0]), FIT)
     assert finished[0] > unfinished[0]
 
 
 def test_faster_lap_beats_slower_lap() -> None:
-    f = compute_fitness(np.array([45.0, 45.0]), np.ones(2, bool), np.array([8.0, 12.0]), FIT)
+    f = compute_fitness(np.array([1.0, 1.0]), np.ones(2, bool), np.array([8.0, 12.0]), FIT)
     assert f[0] > f[1]
 
 
 def test_crashing_early_does_not_pay_off() -> None:
-    """A penalidade de tempo é leve: andar 1 checkpoint a mais compensa 10 s vivo."""
-    early = compute_fitness(np.array([1.0]), np.zeros(1, bool), np.array([1.0]), FIT)
-    later = compute_fitness(np.array([2.0]), np.zeros(1, bool), np.array([11.0]), FIT)
+    """A penalidade de tempo é leve: andar 1% da volta a mais compensa 10 s vivo."""
+    early = compute_fitness(np.array([0.10]), np.zeros(1, bool), np.array([1.0]), FIT)
+    later = compute_fitness(np.array([0.11]), np.zeros(1, bool), np.array([11.0]), FIT)
     assert later[0] > early[0]
 
 
