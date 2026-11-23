@@ -1,0 +1,50 @@
+# Fase 3b: corrige o overfitting da 3 com pistas sorteadas a cada geração.
+name: phase3b_random_tracks
+seed: 42
+generations: 100
+
+# Treino: 3 pistas fixas + 8 sorteadas por geração (random_tracks, no fim). Fitness = média.
+tracks:
+  - configs/tracks/simple.yaml
+  - configs/tracks/hairpin.yaml
+  - configs/tracks/s_curves.yaml
+# Validação: o melhor carro de cada geração é testado aqui, mas estas pistas NUNCA
+# entram no fitness. A chicane (feita à mão) e 8 geradas com seeds diferentes (1000-1007).
+validation_tracks:
+  - configs/tracks/chicane.yaml
+  - configs/tracks/unseen
+validate_every: 5
+workers: 11               # um processo por pista de treino
+
+sim: configs/sim_default.yaml
+output_dir: checkpoints/phase3b_random_tracks
+
+episode:
+  max_time: 40.0
+  target_laps: 1
+
+network:
+  hidden: [8]
+  init_scale: 1.0
+
+ga:
+  population: 100
+  elite: 5
+  tournament_size: 4
+  crossover: uniform
+  crossover_rate: 0.8
+  mutation_rate: 0.1
+  mutation_sigma: 0.4
+  sigma_decay: 0.98       # decai mais devagar que na Fase 2: o problema é mais difícil
+  sigma_min: 0.05
+  diversity_threshold: 0.1
+  diversity_boost: 3.0
+  inject_fraction: 0.1
+
+fitness:
+  time_penalty: 0.02
+  lap_bonus: 50.0
+
+# 8 pistas INÉDITAS por geração: ninguém corre a mesma prova duas vezes, então decorar não
+# compensa. As sementes (100008 em diante) não colidem com validação (1000s) nem teste (2000s).
+random_tracks: {count: 8, generator: configs/generator.yaml, base_seed: 100000}

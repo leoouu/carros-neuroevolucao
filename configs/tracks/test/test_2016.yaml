@@ -1,0 +1,18 @@
+# Gerada por scripts/generate_tracks.py (seed 2016, configs/generator.yaml).
+name: test_2016
+width: 94.3
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [428.7, 573.5]
+- [676.1, 512.4]
+- [570.0, 287.0]
+- [520.3, 204.3]
+- [396.4, 60.0]
+- [300.1, 104.0]
+- [206.7, 185.9]
+- [159.2, 269.9]
+- [60.0, 389.6]
+- [135.7, 473.2]
+- [276.6, 479.1]

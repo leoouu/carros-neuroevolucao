@@ -24,7 +24,7 @@ from carros.evolution.evaluate import (
     mean_fitness,
     run_episode,
 )
-from carros.evolution.trainer import summarize
+from carros.evolution.trainer import random_tracks, summarize, train
 from carros.sim.config import load_sim_config
 from carros.sim.generator import (
     GeneratorParams,
@@ -128,3 +128,46 @@ def test_validation_track_in_training_set_is_rejected() -> None:
     bad["validation_tracks"] = ["configs/tracks/hairpin.yaml"]
     with pytest.raises(ValueError, match="validação"):
         train_config_from_dict(bad)
+
+
+# ------------------------------------------------------------------ retomada
+def _tiny(out: Path, generations: int) -> dict[str, object]:
+    _, raw = load_train_config("configs/phase2_simple_track.yaml")
+    raw = copy.deepcopy(raw)
+    raw.update(output_dir=str(out), generations=generations)
+    raw["ga"].update(population=10, elite=2)
+    raw["episode"]["max_time"] = 1.0
+    raw["random_tracks"]["count"] = 1
+    return raw
+
+
+def test_resume_equals_uninterrupted_training(tmp_path: Path) -> None:
+    def quiet(_: str) -> None: ...
+
+    full, part = _tiny(tmp_path / "full", 4), _tiny(tmp_path / "part", 2)
+    a = train(train_config_from_dict(full), full, quiet)
+    train(train_config_from_dict(part), part, quiet)
+    more = {**part, "generations": 4}
+    b = train(train_config_from_dict(more), more, quiet, resume=True)
+    assert [r.generation for r in b] == [1, 2, 3, 4]
+    assert [r.mean_fitness for r in a] == [r.mean_fitness for r in b]
+    last = "populations/gen004.npy"
+    np.testing.assert_array_equal(
+        np.load(tmp_path / "full" / last), np.load(tmp_path / "part" / last)
+    )
+
+
+def test_resume_rejects_changed_config(tmp_path: Path) -> None:
+    raw = _tiny(tmp_path, 1)
+    train(train_config_from_dict(raw), raw, lambda _: None)
+    changed = {**raw, "seed": 7}
+    with pytest.raises(ValueError, match="config mudou"):
+        train(train_config_from_dict(changed), changed, lambda _: None, resume=True)
+
+
+def test_random_tracks_are_new_each_generation_and_reproducible() -> None:
+    cfg, _ = load_train_config("configs/phase3b_random_tracks.yaml")
+    one, again, two = random_tracks(cfg, 1), random_tracks(cfg, 1), random_tracks(cfg, 2)
+    assert len(one) == 8
+    np.testing.assert_array_equal(one[0].walls, again[0].walls)
+    assert {t.name for t in one}.isdisjoint(t.name for t in two)

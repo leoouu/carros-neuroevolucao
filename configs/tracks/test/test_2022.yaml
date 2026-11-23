@@ -1,0 +1,18 @@
+# Gerada por scripts/generate_tracks.py (seed 2022, configs/generator.yaml).
+name: test_2022
+width: 76.7
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [520.3, 270.2]
+- [557.5, 121.3]
+- [267.8, 60.0]
+- [237.9, 275.8]
+- [93.0, 333.9]
+- [60.0, 550.7]
+- [164.1, 605.9]
+- [365.3, 709.8]
+- [557.4, 750.3]
+- [587.3, 484.7]
+- [649.5, 356.3]

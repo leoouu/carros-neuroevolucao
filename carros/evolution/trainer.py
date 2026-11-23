@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import shutil
 import time
 from collections.abc import Callable, Sequence
@@ -19,6 +20,8 @@ from carros.evolution.evaluate import EvalResult, TrackSet, mean_fitness
 from carros.evolution.ga import mutation_sigma, next_generation
 from carros.evolution.operators import diversity
 from carros.sim.config import SimConfig
+from carros.sim.generator import generate_track, load_generator_params
+from carros.sim.track import Track
 
 NAN = float("nan")
 
@@ -69,13 +72,72 @@ def summarize(results: Sequence[EvalResult], car: int) -> tuple[float, float, fl
     return progress, finished, lap
 
 
+def random_tracks(cfg: TrainConfig, generation: int) -> list[Track]:
+    """Pistas inéditas da geração. A semente depende só da geração: reproduzível e retomável."""
+    rt = cfg.random_tracks
+    if rt.count == 0:
+        return []
+    params = load_generator_params(rt.generator)
+    first = rt.base_seed + generation * rt.count
+    return [generate_track(f"rnd_{s}", params, s) for s in range(first, first + rt.count)]
+
+
+def population_path(run: Path, generation: int) -> Path:
+    """Onde fica a população inteira de uma geração."""
+    return run / "populations" / f"gen{generation:03d}.npy"
+
+
+@dataclass(frozen=True)
+class _State:
+    """Tudo que é preciso para continuar um treino (além da população)."""
+
+    generation: int
+    sigma: float
+    injected: int
+    rng: dict[str, Any]
+
+
+def _save_state(out: Path, state: _State, genomes: np.ndarray) -> None:
+    """Grava a população e só então, atomicamente, o estado que aponta para ela."""
+    path = population_path(out, state.generation)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, genomes)
+    tmp = out / "state.tmp"
+    tmp.write_text(json.dumps(asdict(state)), encoding="utf-8")
+    tmp.replace(out / "state.json")
+
+
+def _check_resume(out: Path, raw: dict[str, Any]) -> None:
+    """Só retoma se a config for a mesma (``generations`` pode aumentar)."""
+    if not (out / "state.json").exists():
+        raise ValueError(f"nada para retomar em {out}")
+    saved = yaml.safe_load((out / "config.yaml").read_text(encoding="utf-8"))
+    if {**saved, "generations": 0} != {**raw, "generations": 0}:
+        raise ValueError("a config mudou desde o treino salvo; não dá para retomar")
+
+
+def _truncate_history(out: Path, before: int) -> list[GenerationRecord]:
+    """Descarta registros a partir de ``before`` (geração que será refeita)."""
+    history = [r for r in load_history(out / "history.csv") if r.generation < before]
+    for i, rec in enumerate(history):
+        _append_csv(out / "history.csv", rec, header=i == 0)
+    return history
+
+
 def train(
-    cfg: TrainConfig, raw: dict[str, Any], log: Callable[[str], None] = print
+    cfg: TrainConfig,
+    raw: dict[str, Any],
+    log: Callable[[str], None] = print,
+    resume: bool = False,
 ) -> list[GenerationRecord]:
-    """Executa o experimento inteiro e devolve o histórico por geração."""
+    """Executa (ou retoma) o experimento e devolve o histórico por geração."""
     rng = np.random.default_rng(cfg.seed)
     out = Path(cfg.output_dir)
-    _save_run_config(out, cfg, raw)
+    if resume:
+        _check_resume(out, raw)
+        (out / "config.yaml").write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
+    else:
+        _save_run_config(out, cfg, raw)
     with (
         TrackSet(cfg.tracks, cfg.sim, cfg.workers) as train_set,
         TrackSet(cfg.validation_tracks, cfg.sim, cfg.workers) as val_set,
@@ -87,10 +149,20 @@ def train(
         )
         genomes = random_genomes(spec, cfg.ga.population, rng, cfg.network.init_scale)
         history: list[GenerationRecord] = []
-        sigma, injected = mutation_sigma(cfg.ga, 0), 0
-        for gen in range(1, cfg.generations + 1):
+        sigma, injected, start = mutation_sigma(cfg.ga, 0), 0, 1
+        if resume:
+            state = _State(**json.loads((out / "state.json").read_text(encoding="utf-8")))
+            start, sigma, injected = state.generation, state.sigma, state.injected
+            rng.bit_generator.state = state.rng
+            genomes = np.load(population_path(out, start))
+            if start > 1:
+                history = _truncate_history(out, start)
+            log(f"Retomando na geração {start}")
+        for gen in range(start, cfg.generations + 1):
             t0 = time.perf_counter()
-            results = train_set.evaluate(genomes, spec, cfg.episode, cfg.fitness)
+            _save_state(out, _State(gen, sigma, injected, dict(rng.bit_generator.state)), genomes)
+            extra = random_tracks(cfg, gen)
+            results = train_set.evaluate(genomes, spec, cfg.episode, cfg.fitness, extra)
             fitness = mean_fitness(results)
             best = int(np.argmax(fitness))
             progress, best_done, lap = summarize(results, best)

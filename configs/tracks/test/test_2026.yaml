@@ -1,0 +1,15 @@
+# Gerada por scripts/generate_tracks.py (seed 2026, configs/generator.yaml).
+name: test_2026
+width: 78.6
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [77.6, 275.1]
+- [78.7, 550.9]
+- [395.2, 669.0]
+- [671.2, 603.1]
+- [780.7, 333.7]
+- [528.1, 142.2]
+- [392.7, 60.0]
+- [60.0, 126.0]

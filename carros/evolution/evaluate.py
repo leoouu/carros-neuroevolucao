@@ -113,45 +113,19 @@ def evaluate(
 
 
 # ----------------------------------------------------------------- várias pistas
-_WORKER_TRACKS: list[Track] = []
-_WORKER_SIM: SimConfig | None = None
-
-
-def _init_worker(track_paths: Sequence[str], sim_path: str) -> None:
-    """Cada processo carrega as pistas uma única vez."""
-    global _WORKER_TRACKS, _WORKER_SIM  # noqa: PLW0603
-    _WORKER_TRACKS = [load_track(p) for p in track_paths]
-    _WORKER_SIM = load_sim_config(sim_path)
-
-
-def _worker_evaluate(
-    index: int,
-    genomes: FloatArray,
-    spec: MLPSpec,
-    episode: EpisodeParams,
-    fitness_params: FitnessParams,
-) -> EvalResult:
-    assert _WORKER_SIM is not None
-    return evaluate(genomes, spec, _WORKER_TRACKS[index], _WORKER_SIM, episode, fitness_params)
-
-
 class TrackSet:
-    """Conjunto de pistas avaliadas juntas; em paralelo (um processo por pista) se ``workers > 1``.
+    """Pistas avaliadas juntas; em paralelo (uma tarefa por pista) se ``workers > 1``.
 
     Paralelizar *entre pistas* é o corte natural: cada pista é independente e
     já vetoriza a população inteira, então não há nada a sincronizar.
     """
 
     def __init__(self, track_paths: Sequence[str], sim_path: str, workers: int = 1) -> None:
-        self.paths = list(track_paths)
-        self.tracks = [load_track(p) for p in self.paths]
+        self.tracks = [load_track(p) for p in track_paths]
         self.sim_cfg = load_sim_config(sim_path)
-        n_workers = min(workers, len(self.paths))
         self._executor: Executor | None = None
-        if n_workers > 1:
-            self._executor = ProcessPoolExecutor(
-                max_workers=n_workers, initializer=_init_worker, initargs=(self.paths, sim_path)
-            )
+        if workers > 1:
+            self._executor = ProcessPoolExecutor(max_workers=workers)
 
     def evaluate(
         self,
@@ -159,17 +133,16 @@ class TrackSet:
         spec: MLPSpec,
         episode: EpisodeParams,
         fitness_params: FitnessParams,
+        extra: Sequence[Track] = (),
     ) -> list[EvalResult]:
-        """Um ``EvalResult`` por pista, na ordem de ``paths``."""
-        if self._executor is None:
-            return [
-                evaluate(genomes, spec, t, self.sim_cfg, episode, fitness_params)
-                for t in self.tracks
-            ]
-        futures = [
-            self._executor.submit(_worker_evaluate, i, genomes, spec, episode, fitness_params)
-            for i in range(len(self.tracks))
+        """Um ``EvalResult`` por pista: as fixas, na ordem, e depois as ``extra``."""
+        jobs = [
+            (genomes, spec, track, self.sim_cfg, episode, fitness_params)
+            for track in [*self.tracks, *extra]
         ]
+        if self._executor is None:
+            return [evaluate(*job) for job in jobs]
+        futures = [self._executor.submit(evaluate, *job) for job in jobs]
         return [f.result() for f in futures]
 
     def close(self) -> None:

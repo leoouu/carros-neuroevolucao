@@ -54,6 +54,15 @@ class FitnessParams:
 
 
 @dataclass(frozen=True)
+class RandomTracksParams:
+    """Pistas sorteadas a cada geração (``count=0`` desliga)."""
+
+    count: int
+    generator: str
+    base_seed: int
+
+
+@dataclass(frozen=True)
 class TrainConfig:
     """Experimento completo."""
 
@@ -70,6 +79,7 @@ class TrainConfig:
     network: NetworkParams
     ga: GAParams
     fitness: FitnessParams
+    random_tracks: RandomTracksParams
 
 
 def _build(cls: type[T], data: dict[str, Any], section: str) -> T:
@@ -87,6 +97,7 @@ def train_config_from_dict(data: dict[str, Any]) -> TrainConfig:
         "network": NetworkParams,
         "ga": GAParams,
         "fitness": FitnessParams,
+        "random_tracks": RandomTracksParams,
     }
     built: dict[str, Any] = {k: _build(cls, data[k], k) for k, cls in nested.items()}
     flat = {k: v for k, v in data.items() if k not in nested}

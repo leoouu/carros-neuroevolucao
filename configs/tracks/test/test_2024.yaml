@@ -1,0 +1,15 @@
+# Gerada por scripts/generate_tracks.py (seed 2024, configs/generator.yaml).
+name: test_2024
+width: 81.5
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [525.7, 533.1]
+- [251.4, 587.6]
+- [69.4, 674.0]
+- [60.0, 386.4]
+- [89.6, 60.0]
+- [262.7, 67.1]
+- [475.2, 129.4]
+- [487.3, 350.6]

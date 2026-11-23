@@ -1,0 +1,18 @@
+# Gerada por scripts/generate_tracks.py (seed 2008, configs/generator.yaml).
+name: test_2008
+width: 85.1
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [435.6, 80.4]
+- [215.1, 73.3]
+- [83.3, 131.1]
+- [60.0, 193.7]
+- [80.4, 338.0]
+- [175.3, 436.7]
+- [197.3, 624.0]
+- [366.1, 659.5]
+- [516.4, 474.4]
+- [698.6, 327.3]
+- [557.5, 60.0]

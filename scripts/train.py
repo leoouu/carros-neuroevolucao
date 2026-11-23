@@ -21,13 +21,14 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--config", default="configs/phase2_simple_track.yaml")
     p.add_argument("--generations", type=int, help="sobrescreve o número de gerações")
+    p.add_argument("--resume", action="store_true", help="continua o treino salvo em output_dir")
     args = p.parse_args()
 
     cfg, raw = load_train_config(args.config)
     if args.generations:
         raw["generations"] = args.generations  # a config salva reflete o que rodou
         cfg = dataclasses.replace(cfg, generations=args.generations)
-    history = train(cfg, raw)
+    history = train(cfg, raw, resume=args.resume)
     out = Path(cfg.output_dir)
     plot_history(history, out / "fitness.png", title=f"Neuroevolução — {cfg.name}")
     print(f"\nSalvo em {out}/ (best_genXXX.npy, history.csv, fitness.png)")

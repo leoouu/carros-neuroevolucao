@@ -1,0 +1,20 @@
+# Gerada por scripts/generate_tracks.py (seed 2028, configs/generator.yaml).
+name: test_2028
+width: 76.8
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [249.3, 194.3]
+- [60.0, 268.7]
+- [104.5, 444.4]
+- [116.2, 546.5]
+- [350.7, 508.3]
+- [430.5, 501.2]
+- [557.7, 583.9]
+- [626.1, 436.9]
+- [721.2, 371.0]
+- [585.6, 243.1]
+- [596.6, 143.6]
+- [428.8, 60.0]
+- [342.4, 142.0]
