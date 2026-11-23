@@ -6,7 +6,7 @@ Exemplos:
         checkpoints/phase2_simple/best_gen002.npy checkpoints/phase2_simple/best_gen050.npy
     python scripts/replay.py --checkpoint ... --screenshot replay.png --frames 300
 
-Controles: R reinicia | TAB sensores | ESC sai. (Exportar GIF/MP4 fica para a Fase 4.)
+Controles: R reinicia | TAB sensores | ESC sai. (Para exportar MP4, use make_video.py.)
 """
 
 from __future__ import annotations

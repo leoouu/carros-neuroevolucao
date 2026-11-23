@@ -4,7 +4,7 @@ Uma população de carros aprende a completar uma pista usando **neuroevolução
 cada carro é controlado por uma pequena rede neural, e as redes evoluem por
 seleção, cruzamento e mutação ao longo das gerações (sem backpropagation, sem dataset).
 
-> **Status:** Fases 1 a 3 concluídas, overfitting corrigido e vídeos prontos (parte da Fase 4).
+> **Status:** Fases 1 a 3 concluídas, overfitting corrigido e vídeos prontos.
 
 ![Gerações 1, 10 e 100 correndo a mesma pista inédita](docs/evolucao.gif)
 
@@ -302,5 +302,4 @@ determinismo.
 - [x] **Fase 3** — pistas difíceis, gerador aleatório e teste de generalização
   - [x] corrigir o overfitting (pistas sorteadas por geração)
   - [x] retomar treino interrompido (`--resume`)
-- [ ] **Fase 4** — vídeos e GIF prontos; falta o polimento final
-- [ ] **Fase 5** — extras (editor de pista, CMA-ES, obstáculos)
+- [ ] **Fase 4** — extras (editor de pista, CMA-ES, obstáculos)
