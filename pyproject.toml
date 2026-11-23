@@ -12,6 +12,7 @@ dependencies = [
     "pygame>=2.5",
     "pyyaml>=6.0",
     "matplotlib>=3.8",
+    "imageio-ffmpeg>=0.5",
 ]
 
 [project.optional-dependencies]
@@ -32,7 +33,7 @@ python_version = "3.11"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["pygame", "pygame.*"]
+module = ["pygame", "pygame.*", "imageio_ffmpeg"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
