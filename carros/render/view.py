@@ -36,6 +36,7 @@ STATUS_LABEL = {
     Status.CRASHED: "bateu",
     Status.STALLED: "parado demais",
     Status.TIMEOUT: "sem checkpoint",
+    Status.FINISHED: "completou",
 }
 
 
@@ -86,18 +87,36 @@ class Renderer:
         pygame.draw.aalines(surf, BORDER, True, cam.to_screen(self.track.inner))
         return surf
 
-    def draw(self, screen: pygame.Surface, world: World, show_sensors: bool = True) -> None:
-        """Desenha pista, próximos checkpoints, raios e carros."""
+    def draw(
+        self,
+        screen: pygame.Surface,
+        world: World,
+        show_sensors: bool = True,
+        colors: list[Color] | None = None,
+        trails: list[list[tuple[float, float]]] | None = None,
+    ) -> None:
+        """Desenha pista, próximos checkpoints, rastros, raios e carros.
+
+        Args:
+            colors: uma cor por carro (padrão: todos azuis).
+            trails: posições passadas de cada carro, em coordenadas do mundo.
+        """
         screen.blit(self._track_surface, (0, 0))
         cam = self.camera
         alive = world.alive
         for k in np.unique(world.next_checkpoint[alive]):
             self._segment(screen, NEXT_CHECKPOINT, self.track.checkpoints[k], 2)
+        if trails:
+            for i, trail in enumerate(trails):
+                if len(trail) > 1:
+                    color = colors[i] if colors else CAR
+                    pygame.draw.aalines(screen, color, False, cam.to_screen(np.array(trail)))
         if show_sensors:
             self._draw_sensors(screen, world)
         corners = car_corners(world.state, world.cfg.car)
-        for i in np.argsort(alive):  # vivos por cima dos eliminados
-            color = CAR if alive[i] else CAR_DEAD
+        out = (world.status != Status.ALIVE) & (world.status != Status.FINISHED)
+        for i in np.argsort(~out):  # eliminados por baixo
+            color = CAR_DEAD if out[i] else (colors[i] if colors else CAR)
             pygame.draw.polygon(screen, color, cam.to_screen(corners[i]))
 
     def _segment(self, surf: pygame.Surface, color: Color, seg: FloatArray, width: int) -> None:
