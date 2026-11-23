@@ -28,6 +28,7 @@ class Status(IntEnum):
     CRASHED = 1
     STALLED = 2
     TIMEOUT = 3
+    FINISHED = 4
 
 
 class World:
@@ -43,15 +44,23 @@ class World:
     Args:
         eliminate_idle: se False, desliga as regras de "parado" e "sem checkpoint"
             (útil no modo manual); a colisão continua valendo.
+        target_laps: ao completar esse número de voltas o carro recebe ``FINISHED``
+            e para (``None`` = corre para sempre).
     """
 
     def __init__(
-        self, track: Track, cfg: SimConfig, n_cars: int = 1, eliminate_idle: bool = True
+        self,
+        track: Track,
+        cfg: SimConfig,
+        n_cars: int = 1,
+        eliminate_idle: bool = True,
+        target_laps: int | None = None,
     ) -> None:
         self.track = track
         self.cfg = cfg
         self.n_cars = n_cars
         self.eliminate_idle = eliminate_idle
+        self.target_laps = target_laps
         car = cfg.car
         # Folga da colisão: meia diagonal do carro + o máximo que ele anda num passo.
         near_margin = float(np.hypot(car.length, car.width)) / 2 + car.max_speed * cfg.dt + 1.0
@@ -72,6 +81,7 @@ class World:
         self.first_lap_time: FloatArray = np.full(n, np.nan)
         self.time_since_checkpoint: FloatArray = np.zeros(n)
         self.stall_time: FloatArray = np.zeros(n)
+        self.time_alive: FloatArray = np.zeros(n)
         self.time = 0.0
         self.steps = 0
 
@@ -95,6 +105,23 @@ class World:
             out[idx] = read_sensors(sub, self.grid.far_walls(sub.positions), self.cfg.sensors)
         return out
 
+    def progress(self) -> FloatArray:
+        """``(N,)`` progresso contínuo: checkpoints passados + fração do caminho ao próximo.
+
+        A fração dá um sinal "suave" para a evolução: dois carros que bateram antes do
+        mesmo checkpoint deixam de empatar — o que chegou mais perto vale mais.
+        """
+        cps = self.track.checkpoints
+        mid = (cps[:, :2] + cps[:, 2:]) / 2.0
+        nxt = mid[self.next_checkpoint]
+        prv = mid[self.next_checkpoint - 1]  # índice -1 = último checkpoint (pista fechada)
+        span = np.linalg.norm(nxt - prv, axis=1)
+        left = np.linalg.norm(nxt - self.state.positions, axis=1)
+        frac = np.clip(1.0 - left / span, 0.0, 1.0)
+        frac = np.where(self.status == Status.FINISHED, 0.0, frac)
+        result: FloatArray = self.checkpoints_passed + frac
+        return result
+
     def observe(self) -> FloatArray:
         """``(N, R+1)`` entradas da rede: sensores + velocidade normalizada."""
         speed = self.state.speed / self.cfg.car.max_speed
@@ -115,14 +142,17 @@ class World:
         )
         self.time += self.cfg.dt
         self.steps += 1
+        self.time_alive += np.where(alive, self.cfg.dt, 0.0)
 
         # Segmento percorrido neste passo: usado no checkpoint e contra "tunneling"
         # (em alta velocidade o carro poderia pular por cima de uma parede fina).
         sweep = np.column_stack([prev.x, prev.y, self.state.x, self.state.y])
         self._update_checkpoints(sweep, alive)
-        self._update_collisions(sweep, alive)
+        # Quem cruzou a chegada neste passo já terminou: colisão não conta mais.
+        still = self.alive
+        self._update_collisions(sweep, still)
         if self.eliminate_idle:
-            self._update_idle(alive)
+            self._update_idle(still)
 
     def _update_checkpoints(self, sweep: FloatArray, alive: BoolArray) -> None:
         cps = self.track.checkpoints[self.next_checkpoint]
@@ -136,6 +166,8 @@ class World:
         self.checkpoints_passed += crossed
         advanced = (self.next_checkpoint + 1) % self.track.n_checkpoints
         self.next_checkpoint = np.where(crossed, advanced, self.next_checkpoint)
+        if self.target_laps is not None:
+            self.status[alive & (self.laps >= self.target_laps)] = Status.FINISHED
 
     def _update_collisions(self, sweep: FloatArray, alive: BoolArray) -> None:
         idx = np.flatnonzero(alive)
