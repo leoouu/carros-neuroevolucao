@@ -4,13 +4,12 @@ Uma população de carros aprende a completar uma pista usando **neuroevolução
 cada carro é controlado por uma pequena rede neural, e as redes evoluem por
 seleção, cruzamento e mutação ao longo das gerações (sem backpropagation, sem dataset).
 
-> **Status:** Fases 1 a 3 concluídas — os carros aprendem em 11 pistas e completam pistas que
-> nunca viram. A Fase 3 também mostrou **overfitting** (veja abaixo); corrigi-lo é o próximo passo.
+> **Status:** Fases 1 a 3 concluídas, overfitting corrigido e vídeos prontos (parte da Fase 4).
 
-![Melhor carro das gerações 1, 15 e 100 numa pista que nenhum deles viu no treino](docs/fase3_replay_pista_nova.png)
+![Gerações 1, 10 e 100 correndo a mesma pista inédita](docs/evolucao.gif)
 
-*Numa pista **nunca vista**: a geração 1 (vermelho) bate logo; a geração 15 (amarelo) completa a
-volta; a geração 100 (azul), mais rápida no treino, corta a curva por dentro e bate — overfitting.*
+*100 redes neurais por geração, numa pista que **nunca entrou no treino**. Dourado: o melhor carro.
+Vermelho: quem bateu. Completam a volta: 0, 6 e 90 de 100. Vídeos em [videos/](videos).*
 
 ## Rodando
 
@@ -64,10 +63,11 @@ carros/
     config.py     #   leitura do YAML do experimento
   render/
     view.py       #   desenho com Pygame (pista, carros, raios, rastros, HUD)
+    video.py      #   exportação de MP4
     plots.py      #   gráfico de fitness (Matplotlib)
   baselines.py    # políticas de referência: heurística e aleatória
 configs/          # YAML: física, gerador, experimentos e pistas
-  tracks/         #   à mão (simple, hairpin, s_curves, chicane), train/ e unseen/ (geradas)
+  tracks/         #   à mão (simple, hairpin, s_curves, chicane), train/, unseen/ e test/ (geradas)
 scripts/          # play_manual, train, replay, compare, generate_tracks, preview_tracks
 checkpoints/      # saída do treino (ignorada pelo git): config, history.csv, fitness.png, best_genXXX
 tests/
@@ -178,28 +178,64 @@ Melhor carro de cada geração nas **9 pistas nunca vistas** (`scripts/compare.p
 
 \* só nas pistas completadas. Tabela completa por pista: [docs/fase3_comparacao.md](docs/fase3_comparacao.md).
 
+![Gerações 1, 15 e 100 numa pista nova](docs/fase3_replay_pista_nova.png)
+
+*O carro da geração 100 (azul) foi afinado para as pistas de treino e bate numa pista nova.*
+
 O que os números dizem:
 
-* **Generalização existe, e cedo.** Na geração 15 o melhor carro completa **todas** as pistas
-  novas — antes mesmo de dominar todas as de treino. Uma rede que só reage a sensores não tem
-  como decorar coordenadas; ela aprende regras do tipo "parede perto à esquerda → vire à direita".
-* **Depois vem o overfitting.** Da geração 20 à 45 o carro completa 100% das pistas, treino e
-  novas. A partir daí a evolução continua reduzindo o tempo de volta *no treino* (7,56 s → 6,95 s)
-  — e o desempenho nas pistas novas cai para 56%. No replay acima dá para ver: o carro da geração
-  100 corta as curvas por dentro, colado na parede, um traçado afinado para as 11 pistas que ele
-  conhece; numa curva nova, essa margem não existe e ele bate.
-* **Hipóteses (diagnóstico antes de mexer em parâmetro):**
-  1. *Fitness:* com todas as voltas completas, a única coisa que ainda diferencia carros é o
-     tempo — a pressão passa a ser "arriscar mais", sem nada que premie margem de segurança.
-  2. *Poucas pistas de treino* (11): a evolução consegue se especializar nelas.
-  3. *Diversidade em queda:* chegou a 0,094 (abaixo do limite 0,1) e disparou injeções nas
-     gerações 78–98; a população está quase clonada.
-* **Próximas correções candidatas:** sortear pistas novas a cada geração (o carro nunca vê a
-  mesma prova duas vezes), ruído nos sensores, e/ou parar quando a validação para de melhorar
-  (*early stopping* — com um terceiro conjunto de teste, para continuar honesto).
-* Melhor resultado hoje: **geração 15** completa 9/9 pistas novas; a **heurística** também
-  completa todas, mais rápida que a geração 15 (7,93 s vs 8,56 s). Superar a heurística *em pistas
-  novas* é o objetivo da correção do overfitting.
+* **Generalização existe, e cedo.** Da geração 15 à 45, o melhor carro completa as 9 pistas novas.
+* **Depois vem o overfitting.** O tempo no treino continua caindo (7,56 s → 6,95 s), mas as pistas
+  novas completadas caem para 56%. A rede não guarda coordenadas, mas pode se especializar nas
+  situações de sensor que aquelas 11 pistas produzem.
+* **Correção:** uma versão anterior deste README dizia que a geração 15 era a melhor e perdia para
+  a heurística. Faltou comparar as intermediárias: a **geração 45** completa 9/9 em 7,01 s
+  (heurística: 7,93 s).
+* **Hipóteses:** (1) com todas as voltas completas, só o tempo diferencia os carros, e nada premia
+  margem de segurança; (2) 11 pistas fixas são poucas; (3) a diversidade caiu abaixo de 0,1.
+
+### Correção do overfitting (Fase 3b)
+
+Testei a hipótese 2: 3 pistas fixas + **8 sorteadas a cada geração**
+(`configs/phase3b_random_tracks.yaml`). Quem só funciona em certas curvas perde o posto quando a
+prova muda. Fitness, rede e algoritmo genético ficaram iguais.
+
+![Treino com pistas sorteadas](docs/fase3b_fitness.png)
+
+Nas pistas de validação, o melhor carro completa 100% em todas as medições da geração 40 à 100.
+A geração 100 foi escolhida pela validação; como essa escolha contamina a validação, a medida final
+usa um **terceiro conjunto**, 30 pistas de teste (sementes 2000–2029):
+
+| agente (30 pistas de teste) | completadas | tempo médio* |
+|---|---:|---:|
+| 3b, geração 1 | 17% | 6,58 s |
+| 3b, geração 10 | 97% | 11,62 s |
+| **3b, geração 100** | **100%** | **6,21 s** |
+| 3, geração 45 (pistas fixas) | 100% | 6,70 s |
+| 3, geração 100 (overfitting) | 80% | 6,24 s |
+| heurística | 97% | 7,04 s |
+| aleatório | 0% | — |
+
+\* só nas pistas completadas. Detalhe por pista: [docs/fase3b_teste.md](docs/fase3b_teste.md).
+**Limites:** é uma única semente de treino, e as pistas de teste saem do mesmo gerador do treino
+(a chicane, feita à mão, está só na validação). Com a prova mudando, o fitness do melhor oscila
+entre gerações: o preço de não decorar.
+
+### Vídeos
+
+`scripts/make_video.py` simula primeiro, desenha depois, e abre pelo quadro final (miniatura).
+O fitness no HUD é medido na pista mostrada; o carro dourado é o melhor *naquela pista*.
+
+```bash
+R=checkpoints/phase3b_random_tracks
+python scripts/make_video.py side --run $R --generations 1,10,100 \
+    --track configs/tracks/test/test_2006.yaml --out videos/1_lado_a_lado.mp4
+python scripts/make_video.py story --run $R --generations 1,5,10,100 --speed 3 \
+    --track configs/tracks/test/test_2006.yaml --out videos/2_evolucao_vertical.mp4
+python scripts/make_video.py tracks --run $R --generations 100 \
+    --track configs/tracks/test --out videos/3_pistas_ineditas.mp4
+python scripts/train.py --config configs/phase3b_random_tracks.yaml --resume  # retomar treino
+```
 
 ## Decisões da Fase 1 — simulação
 
@@ -246,7 +282,7 @@ comparação final.
 
 ## Testes
 
-73 testes. Fase 3: gerador determinístico, válido e com os dois sentidos de corrida; YAMLs salvos
+78 testes. Treino retomado = treino direto; vídeo = episódio avaliado; MP4 no formato certo. Fase 3: gerador determinístico, válido e com os dois sentidos de corrida; YAMLs salvos
 batem com o gerador; heurística completa cada pista feita à mão; treino e validação disjuntos;
 avaliação paralela idêntica à sequencial; média do fitness entre pistas; config rejeita pista de
 validação no treino. Rede: contagem de parâmetros, passada igual à conta manual, cada carro usa o próprio
@@ -264,7 +300,7 @@ determinismo.
 - [x] **Fase 1** — pista, carro, sensores, colisão, render e modo manual
 - [x] **Fase 2** — rede neural (MLP em NumPy) + algoritmo genético na pista simples
 - [x] **Fase 3** — pistas difíceis, gerador aleatório e teste de generalização
-  - [ ] corrigir o overfitting (pistas sorteadas por geração / early stopping)
-  - [ ] retomar treino interrompido (`--resume`)
-- [ ] **Fase 4** — replay "geração 1 vs 10 vs 50", GIF/MP4, gráficos
+  - [x] corrigir o overfitting (pistas sorteadas por geração)
+  - [x] retomar treino interrompido (`--resume`)
+- [ ] **Fase 4** — vídeos e GIF prontos; falta o polimento final
 - [ ] **Fase 5** — extras (editor de pista, CMA-ES, obstáculos)
