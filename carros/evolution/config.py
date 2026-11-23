@@ -60,7 +60,10 @@ class TrainConfig:
     name: str
     seed: int
     generations: int
-    track: str
+    tracks: list[str]  # pistas de treino (arquivos .yaml ou pastas)
+    validation_tracks: list[str]  # pistas NUNCA vistas no treino (podem ser [])
+    validate_every: int  # a cada quantas gerações medir generalização
+    workers: int  # processos em paralelo (1 = sem paralelismo)
     sim: str
     output_dir: str
     episode: EpisodeParams
@@ -87,12 +90,31 @@ def train_config_from_dict(data: dict[str, Any]) -> TrainConfig:
     }
     built: dict[str, Any] = {k: _build(cls, data[k], k) for k, cls in nested.items()}
     flat = {k: v for k, v in data.items() if k not in nested}
+    flat["tracks"] = expand_track_paths(flat.get("tracks", []))
+    flat["validation_tracks"] = expand_track_paths(flat.get("validation_tracks") or [])
     cfg = _build(TrainConfig, {**flat, **built}, "raiz")
+    if not cfg.tracks:
+        raise ValueError("nenhuma pista de treino")
+    overlap = set(cfg.tracks) & set(cfg.validation_tracks)
+    if overlap:
+        raise ValueError(f"pistas de validação também estão no treino: {sorted(overlap)}")
     if cfg.ga.crossover not in ("uniform", "single_point"):
         raise ValueError(f"crossover desconhecido: {cfg.ga.crossover}")
     if not 0 <= cfg.ga.elite < cfg.ga.population:
         raise ValueError("elite deve estar entre 0 e population - 1")
     return cfg
+
+
+def expand_track_paths(entries: list[str]) -> list[str]:
+    """Troca cada pasta pelos ``.yaml`` dentro dela (ordenados); arquivos ficam como estão."""
+    out: list[str] = []
+    for entry in entries:
+        path = Path(entry)
+        if path.is_dir():
+            out.extend(p.as_posix() for p in sorted(path.glob("*.yaml")))
+        else:
+            out.append(path.as_posix())
+    return out
 
 
 def load_train_config(path: str | Path) -> tuple[TrainConfig, dict[str, Any]]:

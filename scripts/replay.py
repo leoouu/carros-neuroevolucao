@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     """Argumentos de linha de comando."""
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--checkpoint", nargs="+", type=Path, required=True)
-    p.add_argument("--track", help="padrão: track.yaml salvo junto do checkpoint")
+    p.add_argument("--track", help="padrão: 1ª pista de treino salva junto do checkpoint")
     p.add_argument("--sim", help="padrão: sim.yaml salvo junto do checkpoint")
     p.add_argument("--max-time", type=float, default=40.0)
     p.add_argument("--screenshot", type=Path, help="salva um PNG após --frames quadros e sai")
@@ -44,7 +44,7 @@ def main() -> None:
     args = parse_args()
     loaded = [load_genome(path) for path in args.checkpoint]
     run_dir = args.checkpoint[0].parent
-    track = load_track(args.track or run_dir / "track.yaml")
+    track = load_track(args.track or sorted((run_dir / "tracks").glob("*.yaml"))[0])
     cfg = load_sim_config(args.sim or run_dir / "sim.yaml")
     world = World(track, cfg, n_cars=len(loaded), target_laps=1)
     colors = [PALETTE[i % len(PALETTE)] for i in range(len(loaded))]

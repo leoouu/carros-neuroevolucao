@@ -2,6 +2,7 @@
 
 Exemplo:
     python scripts/train.py --config configs/phase2_simple_track.yaml
+    python scripts/train.py --config configs/phase3_generalization.yaml
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ def main() -> None:
         cfg = dataclasses.replace(cfg, generations=args.generations)
     history = train(cfg, raw)
     out = Path(cfg.output_dir)
-    plot_history(history, out / "fitness.png", title=f"Neuroevolução — pista '{cfg.name}'")
+    plot_history(history, out / "fitness.png", title=f"Neuroevolução — {cfg.name}")
     print(f"\nSalvo em {out}/ (best_genXXX.npy, history.csv, fitness.png)")
 
 

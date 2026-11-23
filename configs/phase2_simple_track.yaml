@@ -2,7 +2,10 @@
 name: phase2_simple
 seed: 42
 generations: 50
-track: configs/tracks/simple.yaml
+tracks: [configs/tracks/simple.yaml]
+validation_tracks: []
+validate_every: 10
+workers: 1
 sim: configs/sim_default.yaml
 output_dir: checkpoints/phase2_simple
 
@@ -29,5 +32,5 @@ ga:
   inject_fraction: 0.1       # ...e 10% da população vira aleatória
 
 fitness:
-  time_penalty: 0.02    # por segundo vivo (leve: 1 checkpoint ~ 50 s de penalidade)
+  time_penalty: 0.02    # por segundo vivo (leve: 1% da volta = 50 s de penalidade)
   lap_bonus: 50.0       # completar a volta vale mais que qualquer volta incompleta
