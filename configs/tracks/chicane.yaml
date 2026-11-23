@@ -1,0 +1,15 @@
+# Chicane: na reta de baixo a pista dá um "degrau" rápido (direita-esquerda em ~60 px).
+name: chicane
+width: 85.0
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+  - [150, 120]
+  - [850, 120]
+  - [960, 380]
+  - [860, 640]
+  - [600, 640]
+  - [540, 510]
+  - [160, 510]
+  - [60, 330]

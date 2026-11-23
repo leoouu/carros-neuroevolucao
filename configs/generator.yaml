@@ -1,0 +1,9 @@
+# Faixas de sorteio do gerador de pistas aleatórias.
+n_points: [8, 13]        # pontos de controle em volta do círculo
+radius: [170, 420]       # distância de cada ponto ao centro (px): variar cria curvas fechadas
+angle_jitter: 0.35       # quanto cada ponto pode sair do ângulo "ideal" (fração do espaçamento)
+width: [75, 95]          # largura da pista (px)
+smoothing: 3             # menos suavização que a pista simples -> curvas mais fechadas
+spacing: 18.0
+checkpoint_every: 3
+max_tries: 300

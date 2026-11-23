@@ -1,0 +1,17 @@
+# Gerada por scripts/generate_tracks.py (seed 1007, configs/generator.yaml).
+name: unseen_1007
+width: 77.7
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [560.2, 485.4]
+- [396.0, 538.5]
+- [266.1, 679.0]
+- [76.4, 477.8]
+- [93.1, 330.6]
+- [60.0, 60.0]
+- [259.8, 113.9]
+- [456.3, 121.4]
+- [653.8, 173.1]
+- [647.0, 352.2]

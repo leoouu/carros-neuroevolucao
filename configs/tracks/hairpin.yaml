@@ -1,0 +1,18 @@
+# Grampo: a pista mergulha num "dedo" estreito e volta (curva de ~180° bem fechada).
+name: hairpin
+width: 80.0
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+  - [120, 110]
+  - [420, 110]
+  - [440, 470]
+  - [500, 520]
+  - [560, 470]
+  - [580, 110]
+  - [900, 110]
+  - [960, 380]
+  - [880, 640]
+  - [140, 640]
+  - [70, 380]

@@ -1,0 +1,18 @@
+# Gerada por scripts/generate_tracks.py (seed 0, configs/generator.yaml).
+name: train_0000
+width: 87.7
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+- [387.0, 593.0]
+- [206.2, 756.5]
+- [113.5, 610.8]
+- [82.8, 436.0]
+- [60.0, 306.5]
+- [232.1, 236.9]
+- [319.8, 187.8]
+- [399.9, 60.0]
+- [624.9, 251.0]
+- [498.5, 356.2]
+- [650.7, 518.8]

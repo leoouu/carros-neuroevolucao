@@ -1,0 +1,17 @@
+# Curvas em S: o lado de cima é uma sequência esquerda-direita-esquerda-direita.
+name: s_curves
+width: 85.0
+smoothing: 3
+spacing: 18.0
+checkpoint_every: 3
+control_points:
+  - [110, 160]
+  - [314, 100]
+  - [484, 280]
+  - [654, 100]
+  - [824, 280]
+  - [994, 140]
+  - [1054, 420]
+  - [760, 640]
+  - [300, 640]
+  - [80, 430]

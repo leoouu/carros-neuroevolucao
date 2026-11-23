@@ -71,7 +71,7 @@ class Renderer:
         self.size = size
         self.camera = Camera.fit(track, size)
         self.font = pygame.font.SysFont("consolas,dejavusansmono,monospace", 18)
-        self._track_surface = self._draw_track()
+        self.track_surface = self._draw_track()
 
     def _draw_track(self) -> pygame.Surface:
         """Pré-desenha a pista (estática) uma única vez."""
@@ -101,7 +101,7 @@ class Renderer:
             colors: uma cor por carro (padrão: todos azuis).
             trails: posições passadas de cada carro, em coordenadas do mundo.
         """
-        screen.blit(self._track_surface, (0, 0))
+        screen.blit(self.track_surface, (0, 0))
         cam = self.camera
         alive = world.alive
         for k in np.unique(world.next_checkpoint[alive]):
