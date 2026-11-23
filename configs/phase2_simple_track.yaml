@@ -1,0 +1,33 @@
+# Fase 2: evolução na pista simples.
+name: phase2_simple
+seed: 42
+generations: 50
+track: configs/tracks/simple.yaml
+sim: configs/sim_default.yaml
+output_dir: checkpoints/phase2_simple
+
+episode:
+  max_time: 40.0        # s de simulação por geração (a heurística dá a volta em ~8 s)
+  target_laps: 1        # ao completar 1 volta o carro "termina" e para
+
+network:
+  hidden: [8]           # entradas (7 sensores + velocidade) -> 8 -> 2 saídas = 90 genes
+  init_scale: 1.0       # genes iniciais ~ Normal(0, 1)
+
+ga:
+  population: 100
+  elite: 5              # os 5 melhores passam intactos
+  tournament_size: 4    # pressão seletiva moderada
+  crossover: uniform    # uniform | single_point
+  crossover_rate: 0.8
+  mutation_rate: 0.1    # fração de genes alterados por filho
+  mutation_sigma: 0.4   # desvio do ruído gaussiano na geração 1...
+  sigma_decay: 0.97     # ...multiplicado por isto a cada geração...
+  sigma_min: 0.05       # ...até este piso
+  diversity_threshold: 0.1   # desvio médio dos genes abaixo disso = convergência prematura
+  diversity_boost: 3.0       # então a mutação é multiplicada por isto...
+  inject_fraction: 0.1       # ...e 10% da população vira aleatória
+
+fitness:
+  time_penalty: 0.02    # por segundo vivo (leve: 1 checkpoint ~ 50 s de penalidade)
+  lap_bonus: 50.0       # completar a volta vale mais que qualquer volta incompleta
