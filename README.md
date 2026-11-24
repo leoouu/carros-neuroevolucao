@@ -4,12 +4,12 @@ Uma população de carros aprende a completar uma pista usando **neuroevolução
 cada carro é controlado por uma pequena rede neural, e as redes evoluem por
 seleção, cruzamento e mutação ao longo das gerações (sem backpropagation, sem dataset).
 
-> **Status:** Fases 1 a 3 concluídas, overfitting corrigido e vídeos prontos.
+> **Status:** Fases 1 a 3 concluídas, com o overfitting corrigido.
 
 ![Gerações 1, 10 e 100 correndo a mesma pista inédita](docs/evolucao.gif)
 
 *100 redes neurais por geração, numa pista que **nunca entrou no treino**. Dourado: o melhor carro.
-Vermelho: quem bateu. Completam a volta: 0, 6 e 90 de 100. Vídeos em [videos/](videos).*
+Vermelho: quem bateu. Completam a volta: 0, 6 e 90 de 100.*
 
 ## Rodando
 
@@ -30,6 +30,7 @@ python scripts/compare.py --run checkpoints/phase3_generalization --generations 
     --tracks configs/tracks/unseen configs/tracks/chicane.yaml
 python scripts/replay.py --track configs/tracks/unseen/unseen_1003.yaml --checkpoint \
     checkpoints/phase3_generalization/best_gen015.npy checkpoints/phase3_generalization/best_gen100.npy
+python scripts/train.py --config configs/phase3b_random_tracks.yaml  # versão final (--resume retoma)
 python scripts/generate_tracks.py --out configs/tracks/unseen --prefix unseen --seeds 1000-1007
 python scripts/preview_tracks.py configs/tracks/unseen --out pistas.png
 pytest -q
@@ -63,7 +64,6 @@ carros/
     config.py     #   leitura do YAML do experimento
   render/
     view.py       #   desenho com Pygame (pista, carros, raios, rastros, HUD)
-    video.py      #   exportação de MP4
     plots.py      #   gráfico de fitness (Matplotlib)
   baselines.py    # políticas de referência: heurística e aleatória
 configs/          # YAML: física, gerador, experimentos e pistas
@@ -221,22 +221,6 @@ usa um **terceiro conjunto**, 30 pistas de teste (sementes 2000–2029):
 (a chicane, feita à mão, está só na validação). Com a prova mudando, o fitness do melhor oscila
 entre gerações: o preço de não decorar.
 
-### Vídeos
-
-`scripts/make_video.py` simula primeiro, desenha depois, e abre pelo quadro final (miniatura).
-O fitness no HUD é medido na pista mostrada; o carro dourado é o melhor *naquela pista*.
-
-```bash
-R=checkpoints/phase3b_random_tracks
-python scripts/make_video.py side --run $R --generations 1,10,100 \
-    --track configs/tracks/test/test_2006.yaml --out videos/1_lado_a_lado.mp4
-python scripts/make_video.py story --run $R --generations 1,5,10,100 --speed 3 \
-    --track configs/tracks/test/test_2006.yaml --out videos/2_evolucao_vertical.mp4
-python scripts/make_video.py tracks --run $R --generations 100 \
-    --track configs/tracks/test --out videos/3_pistas_ineditas.mp4
-python scripts/train.py --config configs/phase3b_random_tracks.yaml --resume  # retomar treino
-```
-
 ## Decisões da Fase 1 — simulação
 
 **Simulação vetorizada desde o início.** O estado de `N` carros fica em arrays NumPy
@@ -282,7 +266,7 @@ comparação final.
 
 ## Testes
 
-78 testes. Treino retomado = treino direto; vídeo = episódio avaliado; MP4 no formato certo. Fase 3: gerador determinístico, válido e com os dois sentidos de corrida; YAMLs salvos
+78 testes. Treino retomado = treino direto; Fase 3: gerador determinístico, válido e com os dois sentidos de corrida; YAMLs salvos
 batem com o gerador; heurística completa cada pista feita à mão; treino e validação disjuntos;
 avaliação paralela idêntica à sequencial; média do fitness entre pistas; config rejeita pista de
 validação no treino. Rede: contagem de parâmetros, passada igual à conta manual, cada carro usa o próprio
@@ -294,12 +278,3 @@ interseção de segmentos, grade espacial = força bruta, validação de pista, 
 sensores num corredor com resposta conhecida, colisão (incluindo anti-tunneling), contagem de
 checkpoints, eliminação por parada e por falta de progresso, volta completa da heurística e
 determinismo.
-
-## Roadmap
-
-- [x] **Fase 1** — pista, carro, sensores, colisão, render e modo manual
-- [x] **Fase 2** — rede neural (MLP em NumPy) + algoritmo genético na pista simples
-- [x] **Fase 3** — pistas difíceis, gerador aleatório e teste de generalização
-  - [x] corrigir o overfitting (pistas sorteadas por geração)
-  - [x] retomar treino interrompido (`--resume`)
-- [ ] **Fase 4** — extras (editor de pista, CMA-ES, obstáculos)
